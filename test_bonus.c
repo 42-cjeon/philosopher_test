@@ -1,22 +1,21 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <pthread.h>
+#include <semaphore.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 
 #define EPSILON 1000
-#define US_PER_MS 1000
 
-typedef int t_fork;
 typedef unsigned long long t_timestamp;
 typedef struct s_philo_arg
 {
 	t_timestamp sim_start;
 	t_timestamp last_eat;
 	unsigned int id;
-	pthread_mutex_t *lfork;
-	pthread_mutex_t *rfork;
-	pthread_mutex_t *is_end_lock;
+	sem_t *forks;
+	sem_t *forks_lock;
+	sem_t *is_end_lock;
 	int *is_end;
 }	t_philo_arg;
 
@@ -26,7 +25,7 @@ enum e_simulation_state
 	SIM_CONTINUE
 };
 
-int ttd = 310;
+int ttd = 300;
 int tte = 100;
 int tts = 200;
 int n_philo = 200;
@@ -43,14 +42,14 @@ int is_philo_dead(t_philo_arg *arg, t_timestamp now)
 	int result;
 
 	result = 0;
-	pthread_mutex_lock(arg->is_end_lock);
+	sem_wait(arg->is_end_lock);
 	if (now - arg->last_eat >= ttd)
 	{
 		printf("[%-5llums] %3u is dead\n", now - arg->sim_start, arg->id);
 		*(arg->is_end) = 1;
 		result = 1;
 	}
-	pthread_mutex_unlock(arg->is_end_lock);
+	sem_post(arg->is_end_lock);
 	return (result);
 }
 int is_someone_dead(t_philo_arg *arg)
@@ -58,10 +57,10 @@ int is_someone_dead(t_philo_arg *arg)
 	int result;
 
 	result = 0;
-	pthread_mutex_lock(arg->is_end_lock);
+	sem_wait(arg->is_end_lock);
 	if (*(arg->is_end))
 		result = 1;
-	pthread_mutex_unlock(arg->is_end_lock);
+	sem_post(arg->is_end_lock);
 	return (result);
 }
 
@@ -70,13 +69,21 @@ int safe_log(t_philo_arg *arg, const char *str)
 	int result;
 
 	result = 0;
-	pthread_mutex_lock(arg->is_end_lock);
+	sem_wait(arg->is_end_lock);
 	if (*(arg->is_end))
 		result = 1;
 	else
 		printf("[%-5llums] %3u %s\n", get_timestamp_in_ms() - arg->sim_start, arg->id, str);
-	pthread_mutex_unlock(arg->is_end_lock);
+	sem_post(arg->is_end_lock);
 	return result;
+}
+
+void release_fork(t_philo_arg *arg)
+{
+	sem_wait(arg->forks_lock);
+	sem_post(arg->forks);
+	sem_post(arg->forks);
+	sem_post(arg->forks_lock);
 }
 
 int philo_eat(t_philo_arg *arg)
@@ -106,24 +113,18 @@ int philo_eat(t_philo_arg *arg)
 			usleep(EPSILON);
 		}
 	}
-	pthread_mutex_unlock(arg->lfork);
-	pthread_mutex_unlock(arg->rfork);
+	release_fork(arg);
 	return result;
 }
 
-void take_left_fork_first(t_philo_arg *arg)
+void take_fork(t_philo_arg *arg)
 {
-	pthread_mutex_lock(arg->lfork);
+	sem_wait(arg->forks_lock);
+	sem_wait(arg->forks);
 	safe_log(arg, "is taken fork");
-	pthread_mutex_lock(arg->rfork);
+	sem_wait(arg->forks);
 	safe_log(arg, "is taken fork");
-}
-void take_right_fork_first(t_philo_arg *arg)
-{
-	pthread_mutex_lock(arg->rfork);
-	safe_log(arg, "is taken fork");
-	pthread_mutex_lock(arg->lfork);
-	safe_log(arg, "is taken fork");
+	sem_post(arg->forks_lock);
 }
 
 int philo_think(t_philo_arg *arg)
@@ -131,10 +132,7 @@ int philo_think(t_philo_arg *arg)
 	if (is_someone_dead(arg) || is_philo_dead(arg, get_timestamp_in_ms()))
 		return (SIM_END);
 	safe_log(arg, "is thinking");
-	if (arg->id % 2 == 0)
-		take_left_fork_first(arg);
-	else
-		take_right_fork_first(arg);
+	take_fork(arg);
 	return (SIM_CONTINUE);
 }
 
@@ -155,6 +153,7 @@ int philo_sleep(t_philo_arg *arg)
 	}
 	return (SIM_CONTINUE);
 }
+
 void *philo(void *_arg)
 {
 	t_philo_arg *arg;
@@ -173,39 +172,70 @@ void *philo(void *_arg)
 
 int main(void)
 {
-	pthread_t *philos;
-	pthread_mutex_t *forks;
-	t_philo_arg *philo_args;
-	pthread_mutex_t is_end_lock;
+	pid_t *philos;
+	pid_t current_pid;
+	sem_t *forks;
+	sem_t *forks_lock;
+	sem_t *is_end_lock;
+	t_philo_arg philo_args;
 	t_timestamp started_at;
 	int is_end;
+	int status;
 
+	forks = sem_open("forks", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, n_philo);
+	forks_lock = sem_open("forks_lock", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	is_end_lock = sem_open("is_end_lock", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	is_end = 0;
-	philos = (pthread_t *)malloc(sizeof(pthread_t) * n_philo);
-	forks = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t) * n_philo);
-	philo_args = (t_philo_arg *)malloc(sizeof(t_philo_arg) * n_philo);
-
+	philos = (pid_t *)malloc(sizeof(pid_t) * n_philo);
+	philo_args.forks = forks;
+	philo_args.forks_lock = forks_lock;
+	philo_args.is_end_lock = is_end_lock;
+	philo_args.is_end = &is_end;
+	philo_args.sim_start = get_timestamp_in_ms();
+	philo_args.last_eat = philo_args.sim_start;
 	for (int i = 0; i < n_philo; i++)
 	{
-		pthread_mutex_init(&forks[i], NULL);
-		pthread_mutex_init(&is_end_lock, NULL);
-	}
-	started_at = get_timestamp_in_ms();
-	for (int i = 0; i < n_philo; i++)
-	{
-		philo_args[i].id = i + 1;
-		philo_args[i].is_end = &is_end;
-		philo_args[i].is_end_lock = &is_end_lock;
-		philo_args[i].lfork = &forks[i];
-		philo_args[i].rfork = &forks[(i + 1) % n_philo];
-		philo_args[i].sim_start = started_at;
-		philo_args[i].last_eat = started_at;
-		pthread_create(philos + i, NULL, philo, philo_args + i);
+		current_pid = fork();
+		if (current_pid == 0)
+		{
+			philo_args.id = i;
+			philo(&philo_args);
+			exit(0);
+		}
+		else
+			philos[i] = current_pid;
 	}
 	for (int i = 0; i < n_philo; i++)
-		pthread_join(philos[i], NULL);
+		waitpid(philos[i], &status, 0);
 	free(philos);
-	free(forks);
-	free(philo_args);
+	sem_close(forks); sem_unlink("forks");
+	sem_close(forks_lock); sem_unlink("forks_lock");
+	sem_close(is_end_lock); sem_unlink("is_end_lock");
+	
+	while (1);
 	return (0);
 }
+
+/*
+int main(void)
+{
+	stm_t forks
+	pid_t pids[10];
+	pid_t current_pid;
+	int status;
+	//sem = sem_open("forks", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 10);
+	for (int i = 0; i < 10; i++)
+	{
+		current_pid = fork();
+		if (current_pid == 0)
+		{
+			philo();
+			exit(0);
+		}
+		pids[i] = current_pid;
+	}
+	for (int i = 0; i < 10; i++)
+		waitpid(pids[i], &status, 0);
+	return 0;
+}
+*/

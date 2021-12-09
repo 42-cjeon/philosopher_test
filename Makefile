@@ -1,3 +1,7 @@
+main : test.c
+	clang -o main test.c
+
 test : test.c
 	clang -o test test.c && ./test
-.PHONY : test
+	rm -f ./test
+.PHONY : test main
