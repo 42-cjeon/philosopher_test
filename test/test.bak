@@ -1,0 +1,213 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/time.h>
+
+#define EPSILON 100
+
+typedef unsigned long long t_timestamp;
+typedef struct s_philo_arg
+{
+	unsigned int id;
+	unsigned int ttd;
+	unsigned int tte;
+	unsigned int tts;
+	unsigned int min_eat;
+	t_timestamp sim_start;
+	t_timestamp last_eat;
+	pthread_mutex_t *lfork;
+	pthread_mutex_t *rfork;
+	pthread_mutex_t *is_end_lock;
+	int *is_end;
+}	t_philo_arg;
+
+enum e_simulation_state
+{
+	SIM_END,
+	SIM_CONTINUE
+};
+
+int ttd = 310;
+int tte = 100;
+int tts = 200;
+int n_philo = 10;
+
+t_timestamp get_timestamp_in_ms(void)
+{
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
+int is_philo_dead(t_philo_arg *arg, t_timestamp now)
+{
+	int result;
+
+	result = 0;
+	pthread_mutex_lock(arg->is_end_lock);
+	if (now - arg->last_eat >= ttd)
+	{
+		printf("[%-5llums] %3u is dead\n", now - arg->sim_start, arg->id);
+		*(arg->is_end) = 1;
+		result = 1;
+	}
+	pthread_mutex_unlock(arg->is_end_lock);
+	return (result);
+}
+int is_someone_dead(t_philo_arg *arg)
+{
+	int result;
+
+	result = 0;
+	pthread_mutex_lock(arg->is_end_lock);
+	if (*(arg->is_end))
+		result = 1;
+	pthread_mutex_unlock(arg->is_end_lock);
+	return (result);
+}
+
+int safe_log(t_philo_arg *arg, const char *str)
+{
+	int result;
+
+	result = 0;
+	pthread_mutex_lock(arg->is_end_lock);
+	if (*(arg->is_end))
+		result = 1;
+	else
+		printf("[%-5llums] %3u %s\n", get_timestamp_in_ms() - arg->sim_start, arg->id, str);
+	pthread_mutex_unlock(arg->is_end_lock);
+	return result;
+}
+
+int philo_eat(t_philo_arg *arg)
+{
+	t_timestamp eat_started_at;
+	int result;
+
+	eat_started_at = get_timestamp_in_ms();
+	arg->last_eat = eat_started_at;
+	if (is_someone_dead(arg) || is_philo_dead(arg, get_timestamp_in_ms()))
+		result = SIM_END;
+	else
+	{
+		safe_log(arg, "is eating");
+		while (42)
+		{
+			if (is_someone_dead(arg))
+			{
+				result = SIM_END;
+				break ;
+			}
+			if (get_timestamp_in_ms() - eat_started_at >= tte)
+			{
+				result = SIM_CONTINUE;
+				break ;
+			}
+			usleep(EPSILON);
+		}
+	}
+	pthread_mutex_unlock(arg->lfork);
+	pthread_mutex_unlock(arg->rfork);
+	return result;
+}
+
+void take_left_fork_first(t_philo_arg *arg)
+{
+	pthread_mutex_lock(arg->lfork);
+	safe_log(arg, "is taken fork");
+	pthread_mutex_lock(arg->rfork);
+	safe_log(arg, "is taken fork");
+}
+void take_right_fork_first(t_philo_arg *arg)
+{
+	pthread_mutex_lock(arg->rfork);
+	safe_log(arg, "is taken fork");
+	pthread_mutex_lock(arg->lfork);
+	safe_log(arg, "is taken fork");
+}
+
+int philo_think(t_philo_arg *arg)
+{
+	if (is_someone_dead(arg) || is_philo_dead(arg, get_timestamp_in_ms()))
+		return (SIM_END);
+	safe_log(arg, "is thinking");
+	if (arg->id % 2 == 0)
+		take_left_fork_first(arg);
+	else
+		take_right_fork_first(arg);
+	return (SIM_CONTINUE);
+}
+
+int philo_sleep(t_philo_arg *arg)
+{
+	t_timestamp sleep_started_at;
+
+	
+	safe_log(arg, "is sleeping");
+	sleep_started_at = get_timestamp_in_ms();
+	while (42)
+	{
+		if (is_someone_dead(arg) || is_philo_dead(arg, get_timestamp_in_ms()))
+			return (SIM_END);
+		if (get_timestamp_in_ms() - sleep_started_at >= tts)
+			break ;
+		usleep(EPSILON);
+	}
+	return (SIM_CONTINUE);
+}
+void *philo(void *_arg)
+{
+	t_philo_arg *arg;
+
+	arg = (t_philo_arg *)_arg;
+	while (42)
+	{
+		if (philo_think(arg) == SIM_END)
+			return (NULL);
+		if (philo_eat(arg) == SIM_END)
+			return (NULL);
+		if (philo_sleep(arg) == SIM_END)
+			return (NULL);
+	}
+}
+
+int main(void)
+{
+	pthread_t *philos;
+	pthread_mutex_t *forks;
+	t_philo_arg *philo_args;
+	pthread_mutex_t is_end_lock;
+	t_timestamp started_at;
+	int is_end;
+
+	is_end = 0;
+	philos = (pthread_t *)malloc(sizeof(pthread_t) * n_philo);
+	forks = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t) * n_philo);
+	philo_args = (t_philo_arg *)malloc(sizeof(t_philo_arg) * n_philo);
+
+	for (int i = 0; i < n_philo; i++)
+	{
+		pthread_mutex_init(&forks[i], NULL);
+		pthread_mutex_init(&is_end_lock, NULL);
+	}
+	started_at = get_timestamp_in_ms();
+	for (int i = 0; i < n_philo; i++)
+	{
+		philo_args[i].id = i + 1;
+		philo_args[i].is_end = &is_end;
+		philo_args[i].is_end_lock = &is_end_lock;
+		philo_args[i].lfork = &forks[i];
+		philo_args[i].rfork = &forks[(i + 1) % n_philo];
+		philo_args[i].sim_start = started_at;
+		philo_args[i].last_eat = started_at;
+		pthread_create(philos + i, NULL, philo, philo_args + i);
+	}
+	for (int i = 0; i < n_philo; i++)
+		pthread_join(philos[i], NULL);
+	free(philos);
+	free(forks);
+	free(philo_args);
+	return (0);
+}

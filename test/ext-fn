@@ -1,0 +1,42 @@
+-string.h-
+memset
+
+-stdio.h-
+printf
+
+-stdlib.h-
+malloc
+free
+
+-unistd.h-
+write
+usleep
+	success : 0
+	failure : -1 then errno will set [EINTR]
+
+-sys/time.h-
+gettimeofday
+
+-pthread.h-
+pthread_create
+	success : 0
+	failure : 
+
+pthread_detach
+
+pthread_join
+
+pthread_mutex_init
+	success : 0
+	failure : [EINVAL, ENOMEM]
+
+pthread_mutex_destroy
+	success : 0
+	failure : [EINVAL, EBUSY]
+pthread_mutex_lock
+	success : 0
+	failure : [EINVAL, EDEADLK]
+
+pthread_mutex_unlock
+	success : 0
+	failure : [EINVAL, EPERM]
