@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cjeon <cjeon@student.42seoul.kr>           +#+  +:+       +#+        */
+/*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/10 18:26:46 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/14 02:22:43 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/14 17:04:20 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ int	main(int argc, const char **argv)
 		return (1);
 	if (alloc_philo_args(main_arg.n_philos, &philo_args))
 		return (1);
-	philo_args[1].id = 10;
 	init_philo_args(&shared_arg, &main_arg, philo_args);
 	if (init_mutex(&shared_arg, &main_arg, philo_args))
 	{
