@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   observer_routine.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cjeon <cjeon@student.42seoul.kr>           +#+  +:+       +#+        */
+/*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/14 02:09:39 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/14 02:41:48 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/14 17:12:28 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ int	observer_is_end(t_observer_arg *arg)
 		if (somone_dead)
 		{
 			pthread_mutex_lock(&(arg->shared_arg->is_end_lock));
-			printf("%llu %u is dead\n", get_timestamp_in_ms() - \
+			printf("%llu %u died\n", get_timestamp_in_ms() - \
 					arg->philo_args[i].started_at, i + 1);
 			arg->shared_arg->is_end = 1;
 			pthread_mutex_unlock(&(arg->shared_arg->is_end_lock));

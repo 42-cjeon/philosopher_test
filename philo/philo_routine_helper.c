@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philo_routine_helper.c                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cjeon <cjeon@student.42seoul.kr>           +#+  +:+       +#+        */
+/*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/14 01:51:44 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/14 02:27:52 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/14 17:11:19 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,17 +16,17 @@
 static void	take_left_fork_first(t_philo_arg *arg)
 {
 	pthread_mutex_lock(arg->lfork);
-	syncronized_log(arg, "is taken fork");
+	syncronized_log(arg, "has taken a fork");
 	pthread_mutex_lock(arg->rfork);
-	syncronized_log(arg, "is taken fork");
+	syncronized_log(arg, "has taken a fork");
 }
 
 static void	take_right_fork_first(t_philo_arg *arg)
 {
 	pthread_mutex_lock(arg->rfork);
-	syncronized_log(arg, "is taken fork");
+	syncronized_log(arg, "has taken a fork");
 	pthread_mutex_lock(arg->lfork);
-	syncronized_log(arg, "is taken fork");
+	syncronized_log(arg, "has taken a fork");
 }
 
 void	philo_take_forks(t_philo_arg *arg)
