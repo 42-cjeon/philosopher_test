@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cjeon <cjeon@student.42seoul.kr>           +#+  +:+       +#+        */
+/*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/14 01:57:32 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/14 02:36:02 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/16 15:36:42 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ static int	ft_atoll(const char *str, long long *n)
 		*n = *n * 10 + (str[len] - '0');
 		len++;
 	}
-	if (str[len] != '\0' || len == 0 || UINT32_MAX < *n || *n < 0)
+	if (str[len] != '\0' || len == 0 || UINT32_MAX < *n || *n <= 0)
 		return (1);
 	return (0);
 }
