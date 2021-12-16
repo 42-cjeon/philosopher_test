@@ -11,26 +11,63 @@ exit
 
 -unistd.h-
 usleep
+	success : 0
+	failure : -1 & errno -> [EINTR]
+
 write
+	success
 fork
+	success : pid_t
+	failure : -1 & errno -> [EAGAIN, ENOMEM]
 
 -signal.h-
 kill
+	success : 0
+	failure : -1 & errno -> [EINVAL, EPERM, ESRCH]
 
 -sys/time.h-
 gettimeofday
+	success : 0
+	failure : -1 & errno -> [EFAULT, EPERM]
 
 -sys/wait.h-
 waitpid
+	success : int
+	failure : -1 & errno -> [ECHILD, EFAULT, EINVAL]
 
 -pthread.h-
 pthread_create
+	success : 0
+	failure : [EAGAIN, EPERM, EINVAL]
+
 pthread_detach
+	success : 0
+	failure : [EINVAL, ESRCH]
+
 pthread_join
+	success : 0
+	failure : [EINVAL, ESRCH, EDEADLK]
 
 -semaphore.h-
 sem_open
+	success : sem_t *
+	failure : SEM_FAILED & errno -> [
+		EACCESS, EEXIST, EINTR, EINVAL, EMFILE, 
+		ENAMETOOLONG, ENFILE, ENOENT, ENOSPC
+	]
+
 sem_close
+	success : 0
+	failure : -1 & errno -> [EINVAL]
+
 sem_post
+	success : 0
+	failure : -1 & errno -> [EINVAL]
+
 sem_wait
+	success : 0
+	failure : -1 & errno -> [EAGAIN, EDEADLK, EINTR, EINVAL]
+
 sem_unlink
+	success : 0
+	failure : -1 & errno -> [EACCESS, ENAMETOOLONG, ENOENT]
