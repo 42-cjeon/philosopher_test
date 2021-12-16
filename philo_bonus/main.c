@@ -6,10 +6,11 @@
 /*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/10 18:26:46 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/16 18:08:59 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/16 18:11:32 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <unistd.h>
 #include "philo.h"
 
 static enum e_exit_status	exit_with(enum e_exit_status exit_status)
@@ -35,6 +36,7 @@ int	main(int argc, const char **argv)
 	t_philo_arg		philo_arg;
 	int				result;
 
+	result = SUCCESS;
 	if (parse_input(argc, argv, &main_arg))
 		return (exit_with(PARSE_FAIL));
 	if (init_semaphore(&shared_arg, main_arg.n_philos))
