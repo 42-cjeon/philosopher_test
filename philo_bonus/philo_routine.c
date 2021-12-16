@@ -6,7 +6,7 @@
 /*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/14 01:51:42 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/16 17:18:19 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/16 18:17:24 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,12 @@ int	is_philo_dead(t_shared_arg *shared_arg, t_main_arg *main_arg, \
 int	philo_start(t_shared_arg *shared_arg, t_main_arg *main_arg, \
 					t_philo_arg *philo_arg)
 {
+	if (main_arg->n_philos == 1)
+	{
+		printf("0 1 has taken a fork\n");
+		return (smart_sleep(shared_arg, main_arg, \
+					philo_arg, main_arg->ttd * 2));
+	}
 	while (42)
 	{
 		if (is_philo_dead(shared_arg, main_arg, philo_arg) \
