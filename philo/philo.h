@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philo.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cjeon <cjeon@student.42seoul.kr>           +#+  +:+       +#+        */
+/*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/13 02:27:24 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/14 02:48:38 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/16 17:55:05 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,15 @@ typedef struct s_observer_arg
 	t_philo_arg		*philo_args;
 }							t_observer_arg;
 
+enum e_exit_status
+{
+	SUCCESS,
+	PARSE_FAIL,
+	ALLOC_FAIL,
+	MUTEX_FAIL,
+	RUNTIME_FAIL
+};
+
 int			init_mutex(t_shared_arg *shared_arg, t_main_arg *main_arg, \
 						t_philo_arg *philo_arg);
 void		destroy_mutex(t_shared_arg *shared_arg, t_main_arg *main_arg, \
@@ -74,5 +83,6 @@ int			run_simulation(t_shared_arg *shared_arg, t_main_arg *main_arg, \
 void		smart_sleep(unsigned long long t);
 void		syncronized_log(t_philo_arg *arg, const char *msg);
 t_timestamp	get_timestamp_in_ms(void);
+size_t		ft_strlen(const char *s);
 
 #endif
