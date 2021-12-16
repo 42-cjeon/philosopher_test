@@ -6,7 +6,7 @@
 /*   By: cjeon <student.42seoul.kr>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/12/13 02:27:24 by cjeon             #+#    #+#             */
-/*   Updated: 2021/12/16 17:20:44 by cjeon            ###   ########.fr       */
+/*   Updated: 2021/12/16 18:07:16 by cjeon            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,14 @@ typedef struct s_observer_arg
 	sem_t			*is_end_lock;
 }							t_observer_arg;
 
+enum e_exit_status
+{
+	SUCCESS,
+	PARSE_FAIL,
+	SEMAPHORE_FAIL,
+	RUNTIME_FAIL
+};
+
 void		*everyone_full_start(void *_arg);
 int			parse_input(int argc, const char **argv, t_main_arg *main_arg);
 void		philo_release_forks(t_shared_arg *shared_arg);
@@ -66,5 +74,6 @@ void		syncronized_log(t_shared_arg *shared_arg, t_philo_arg *philo_arg, \
 								const char *msg);
 int			smart_sleep(t_shared_arg *shared_arg, t_main_arg *main_arg, \
 							t_philo_arg *philo_arg, unsigned long long t);
+size_t		ft_strlen(const char *s);
 
 #endif
